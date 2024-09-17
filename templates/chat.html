@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Test chat box</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+
+</head>
+
+<body>
+    <section class="fmng">
+        <div class="upload-box">
+            <!-- Upload Section -->
+            <div class="upload-section">
+                <label for="file-upload" class="upload-btn">
+                    <i class="fa fa-upload"></i> Upload File
+                </label>
+                <input type="file" id="file-upload" accept="*" hidden>
+                <p class="upload-msg">Choose a file to upload</p>
+            </div>
+
+            <!-- Divider -->
+            <hr class="divider">
+
+            <!-- Display Section -->
+            <div class="file-display" id="file-display">
+            </div>
+
+            <!-- Divider -->
+            <hr class="divider">
+
+            <!-- Reset Section -->
+            <form class="reset-section">
+                <button class="reset-btn" id="reset-btn">Reset DB</button>
+            </form>
+        </div>
+    </section>
+    <section class="msger">
+        <header class="msger-header">
+            <div class="msger-header-title">
+                <i class="fas fa-comment-alt"></i> SimpleChat
+            </div>
+            <div class="msger-header-options">
+                <span><i class="fas fa-cog"></i></span>
+            </div>
+        </header>
+
+        <main class="msger-chat">
+            <div class="msg left-msg">
+                <div class="msg-img"
+                    style="background-image: url(https://cdn1.iconfinder.com/data/icons/ninja-things-1/1772/ninja-simple-512.png)">
+                </div>
+
+                <div class="msg-bubble">
+                    <div class="msg-info">
+                        <div class="msg-info-name">BOT</div>
+                        <div class="msg-info-time">12:45</div>
+                    </div>
+
+                    <div class="msg-text">
+                        Hi, welcome to SimpleChat! Go ahead and send me a message. 😄
+                    </div>
+                </div>
+            </div>
+
+        </main>
+
+        <form class="msger-inputarea">
+            <input type="text" class="msger-input" placeholder="Enter your message...">
+            <button type="submit" class="msger-send-btn">Send</button>
+        </form>
+    </section>
+    <script type="text/javascript" src="{{ url_for('static', filename='script.js') }}"></script>
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+    <script type=text/javascript>
+            $(function() {
+            $('#reset-btn').on('click', function(e) {
+                e.preventDefault()
+                $.getJSON('/reset_db',
+                    function(data) {
+                //do nothing
+                });
+                $('#file-display').html("")
+                return false;
+            });
+            });
+            
+    </script>
+</body>
