@@ -9,6 +9,7 @@ from langchain.text_splitter import CharacterTextSplitter
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 # from langchain.vectorstores.Chroma import Chroma
 from langchain_chroma import Chroma
+from langchain.prompts import PromptTemplate
 from langchain.chains import ConversationalRetrievalChain
 from langchain.memory import ConversationBufferMemory
 from langchain_community.embeddings import HuggingFaceEmbeddings
@@ -21,6 +22,7 @@ from langchain.utils.html import (PREFIXES_TO_IGNORE_REGEX,
                                   SUFFIXES_TO_IGNORE_REGEX)
 
 from config import *
+from gemini import gemini
 import logging
 import sys
 import fitz  # PyMuPDF
@@ -32,7 +34,7 @@ global conversation
 conversation = None
 did= 1
 embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
-embedding_function = SentenceTransformerEmbeddings(model_name="all-MiniLM-L6-v2")
+# embedding_function = SentenceTransformerEmbeddings(model_name="all-MiniLM-L6-v2")
 
 vector_store = Chroma(
     collection_name="collection",
@@ -99,10 +101,11 @@ def init_index_pdf_folder():
 
     # vectordb = Chroma.from_documents(
     #     documents=documents,
-    #     # embedding=embeddings,
-    #     embedding=embedding_function,
+    #     embedding=embeddings,
+    #     # embedding=embedding_function,
     #     persist_directory=INDEX_PERSIST_DIRECTORY
     # )
+    
     global did
     vector_store.add_documents(
         documents=documents,
@@ -110,6 +113,8 @@ def init_index_pdf_folder():
     )
     did += 1
     # vectordb.persist()
+    
+
 
 def init_index_pdf_file(pdf_file_path):
     if not INIT_INDEX:
@@ -175,7 +180,7 @@ def init_index_url():
 
     # create embeddings with huggingface embedding model `all-MiniLM-L6-v2`
     # then persist the vector index on vector db
-    embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
+    # embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
     vectordb = Chroma.from_documents(
         documents=documents,
         embedding=embeddings,
@@ -184,31 +189,46 @@ def init_index_url():
     vectordb.persist()
 
 
-def init_conversation():
+def init_conversation(option=0):
     global conversation
 
     # load index
     # embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
     # vectordb = Chroma(persist_directory=INDEX_PERSIST_DIRECTORY,embedding_function=embeddings)
-    vectordb = Chroma(persist_directory=INDEX_PERSIST_DIRECTORY,embedding_function=embeddings)
     
 
     # llama2 llm which runs with ollama
     # ollama expose an api for the llam in `localhost:11434`
-    llm = Ollama(
-        model="llama2",
-        base_url="http://localhost:11434",
-        verbose=True,
-        temperature=0.7
+    # llm = Ollama(
+    #     model="llama2",
+    #     base_url="http://localhost:11434",
+    #     verbose=True,
+    #     temperature=0.7
+    # )
+    custom_prompt = PromptTemplate(
+        input_variables=["question", "context"],  # Các biến cần thiết
+        template=(
+            "Bạn là một trợ lý thông minh và chính xác. Nhiệm vụ của bạn là trích xuất thông tin chính xác và chi tiết "
+            "từ ngữ cảnh đã cho và trả lời các câu hỏi chỉ dựa trên thông tin có trong ngữ cảnh. Hãy tuân theo những nguyên tắc sau:\n\n"
+            "1. Chỉ sử dụng thông tin có trong ngữ cảnh để trả lời câu hỏi. Nếu câu trả lời không có trong ngữ cảnh, hãy đưa ra các gợi ý liên quan để người dùng có thể hỏi.\n"
+            "2. Tránh suy đoán hoặc thêm vào bất kỳ thông tin nào không được đề cập rõ ràng trong ngữ cảnh.\n"
+            "3. Trả lời rõ ràng, súc tích và chi tiết.\n"
+            "4. Nếu câu hỏi yêu cầu tóm tắt hoặc giải thích, đảm bảo rằng nó được căn cứ hoàn toàn vào ngữ cảnh.\n\n"
+            "Dưới đây là ngữ cảnh:\n"
+            "{context}\n\n"
+            "Câu hỏi: {question}\n\n"
+            "Trả lời:"
+        )
     )
-
     # create conversation
     conversation = ConversationalRetrievalChain.from_llm(
-        llm,
-        retriever=vectordb.as_retriever(),
+        gemini,
+        retriever=vector_store.as_retriever(),
         return_source_documents=True,
         verbose=True,
+        combine_docs_chain_kwargs={"prompt": custom_prompt},
     )
+    print("Init conversation done")
 
 
 def reset_chromadb():
